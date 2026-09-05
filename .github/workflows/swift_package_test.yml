@@ -547,7 +547,7 @@ jobs:
         run: |
             echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Check out related PRs
-        if: ${{ github.event_name == 'workflow_dispatch' || (inputs.enable_cross_pr_testing && github.event_name == 'pull_request') }}
+        if: ${{ inputs.enable_cross_pr_testing && github.event_name == 'pull_request' }}
         run: |
           cat ${{ steps.script_path.outputs.root }}/.github/workflows/scripts/cross-pr-checkout.swift > /tmp/cross-pr-checkout.swift
           swift /tmp/cross-pr-checkout.swift "${{ github.repository }}" "${{ github.event.number }}"
