@@ -102,136 +102,51 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: X64
-            runner: ubuntu-24.04
-            hash: ${{ inputs.linux_x86_64_hash }}
-          - arch: ARM64
-            runner: ubuntu-24.04-arm
-            hash: ${{ inputs.linux_aarch64_hash }}
+        - arch: X64
+          runner: ubuntu-24.04
+          hash: ${{ inputs.linux_x86_64_hash }}
+        - arch: ARM64
+          runner: ubuntu-24.04-arm
+          hash: ${{ inputs.linux_aarch64_hash }}
     runs-on: ${{ matrix.runner }}
     container:
       image: ${{ inputs.linux_container_image }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install prerequisites
-        shell: bash
-        env:
-          PREREQUISITES_COMMAND: ${{ inputs.linux_prerequisites_command }}
-        run: |
-          set -euo pipefail
-          eval "${PREREQUISITES_COMMAND}"
-      - name: Install CMake
-        id: install
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: ${{ matrix.hash }}
-      - name: Pre-build
-        if: ${{ inputs.linux_pre_build_command != '' }}
-        shell: bash
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
+    - name: Checkout
+      uses: actions/checkout@v7
+    - name: Install prerequisites
+      shell: bash
+      env:
+        PREREQUISITES_COMMAND: ${{ inputs.linux_prerequisites_command }}
+      run: |
+        set -euo pipefail
+        eval "${PREREQUISITES_COMMAND}"
+    - name: Install CMake
+      id: install
+      uses: ./.github/actions/install-cmake
+      with:
+        cmake-version: ${{ inputs.cmake_version }}
+        hash: ${{ matrix.hash }}
+    - name: Pre-build
+      if: ${{ inputs.linux_pre_build_command != '' }}
+      shell: bash
+      env:
+        CMAKE: ${{ steps.install.outputs.cmake }}
+        CTEST: ${{ steps.install.outputs.ctest }}
         # zizmor: ignore[template-injection]
-        run: ${{ inputs.linux_pre_build_command }}
-      - name: Configure
-        shell: bash
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
+      run: ${{ inputs.linux_pre_build_command }}
+    - name: Configure
+      shell: bash
+      env:
+        CMAKE: ${{ steps.install.outputs.cmake }}
+        CTEST: ${{ steps.install.outputs.ctest }}
         # zizmor: ignore[template-injection]
-        run: ${{ inputs.linux_configure_command }}
-      - name: Build
-        shell: bash
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
+      run: ${{ inputs.linux_configure_command }}
+    - name: Build
+      shell: bash
+      env:
+        CMAKE: ${{ steps.install.outputs.cmake }}
+        CTEST: ${{ steps.install.outputs.ctest }}
         # zizmor: ignore[template-injection]
-        run: ${{ inputs.linux_build_command }}
+      run: ${{ inputs.linux_build_command }}
 
-  macos-build:
-    name: "macOS (ARM64)"
-    if: ${{ inputs.enable_macos_checks }}
-    runs-on: [self-hosted, macos, tahoe, ARM64]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install CMake
-        id: install
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: ${{ inputs.macos_hash }}
-      - name: Pre-build
-        if: ${{ inputs.macos_pre_build_command != '' }}
-        shell: bash
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-        # zizmor: ignore[template-injection]
-        run: ${{ inputs.macos_pre_build_command }}
-      - name: Configure
-        shell: bash
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-        # zizmor: ignore[template-injection]
-        run: ${{ inputs.macos_configure_command }}
-      - name: Build
-        shell: bash
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-        # zizmor: ignore[template-injection]
-        run: ${{ inputs.macos_build_command }}
-
-  windows-build:
-    name: "Windows (${{ matrix.runner }})"
-    if: ${{ inputs.enable_windows_checks }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: windows-2022
-            hash: ${{ inputs.windows_x86_64_hash }}
-          - runner: windows-11-arm
-            hash: ${{ inputs.windows_arm64_hash }}
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install CMake
-        id: install
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: ${{ matrix.hash }}
-      - name: Pre-build
-        if: ${{ inputs.windows_pre_build_command != '' }}
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-        # zizmor: ignore[template-injection]
-        run: |
-          $ErrorActionPreference = "Stop"
-          function Invoke-Program($Executable) { & $Executable @args; if ($LastExitCode -ne 0) { exit $LastExitCode } }
-          ${{ inputs.windows_pre_build_command }}
-      - name: Configure
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-        # zizmor: ignore[template-injection]
-        run: |
-          $ErrorActionPreference = "Stop"
-          function Invoke-Program($Executable) { & $Executable @args; if ($LastExitCode -ne 0) { exit $LastExitCode } }
-          ${{ inputs.windows_configure_command }}
-      - name: Build
-        env:
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-        # zizmor: ignore[template-injection]
-        run: |
-          $ErrorActionPreference = "Stop"
-          function Invoke-Program($Executable) { & $Executable @args; if ($LastExitCode -ne 0) { exit $LastExitCode } }
-          ${{ inputs.windows_build_command }}

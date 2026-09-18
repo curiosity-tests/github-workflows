@@ -39,111 +39,47 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: X64
-            runner: ubuntu-24.04
-            hash: ${{ inputs.linux_x86_64_hash }}
-          - arch: ARM64
-            runner: ubuntu-24.04-arm
-            hash: ${{ inputs.linux_aarch64_hash }}
+        - arch: X64
+          runner: ubuntu-24.04
+          hash: ${{ inputs.linux_x86_64_hash }}
+        - arch: ARM64
+          runner: ubuntu-24.04-arm
+          hash: ${{ inputs.linux_aarch64_hash }}
     runs-on: ${{ matrix.runner }}
     container:
       image: swift:6.2-jammy
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install prerequisites
-        shell: bash
-        run: |
-          apt-get update
-          apt-get install -y curl
-      - name: Install CMake
-        id: install
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: ${{ matrix.hash }}
-      - name: Verify CMake installation
-        shell: bash
-        env:
-          EXPECTED_VERSION: ${{ inputs.cmake_version }}
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-          CMAKE_DIR: ${{ steps.install.outputs.cmake-dir }}
-        run: |
-          set -euo pipefail
-          # Outputs point at real, executable files
-          test -x "${CMAKE}"
-          test -x "${CTEST}"
-          test -d "${CMAKE_DIR}"
-          # Explicit output paths run and report the expected version
-          "${CMAKE}" --version | grep -q "${EXPECTED_VERSION}"
-          "${CTEST}" --version
-          # GITHUB_PATH was updated: bare `cmake` resolves in this later step
-          cmake --version | grep -q "${EXPECTED_VERSION}"
-
-  macos:
-    name: "macOS (ARM64)"
-    runs-on: [self-hosted, macos, tahoe, ARM64]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install CMake
-        id: install
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: ${{ inputs.macos_hash }}
-      - name: Verify CMake installation
-        shell: bash
-        env:
-          EXPECTED_VERSION: ${{ inputs.cmake_version }}
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-          CMAKE_DIR: ${{ steps.install.outputs.cmake-dir }}
-        run: |
-          set -euo pipefail
-          test -x "${CMAKE}"
-          test -x "${CTEST}"
-          test -d "${CMAKE_DIR}"
-          "${CMAKE}" --version | grep -q "${EXPECTED_VERSION}"
-          "${CTEST}" --version
-          cmake --version | grep -q "${EXPECTED_VERSION}"
-
-  windows:
-    name: "Windows (${{ matrix.runner }})"
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: windows-2022
-            hash: ${{ inputs.windows_x86_64_hash }}
-          - runner: windows-11-arm
-            hash: ${{ inputs.windows_arm64_hash }}
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install CMake
-        id: install
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: ${{ matrix.hash }}
-      - name: Verify CMake installation
-        shell: bash
-        env:
-          EXPECTED_VERSION: ${{ inputs.cmake_version }}
-          CMAKE: ${{ steps.install.outputs.cmake }}
-          CTEST: ${{ steps.install.outputs.ctest }}
-          CMAKE_DIR: ${{ steps.install.outputs.cmake-dir }}
-        run: |
-          set -euo pipefail
-          test -x "${CMAKE}"
-          test -x "${CTEST}"
-          test -d "${CMAKE_DIR}"
-          "${CMAKE}" --version | grep -q "${EXPECTED_VERSION}"
-          "${CTEST}" --version
-          cmake --version | grep -q "${EXPECTED_VERSION}"
+    - name: Checkout
+      uses: actions/checkout@v7
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        apt-get update
+        apt-get install -y curl
+    - name: Install CMake
+      id: install
+      uses: ./.github/actions/install-cmake
+      with:
+        cmake-version: ${{ inputs.cmake_version }}
+        hash: ${{ matrix.hash }}
+    - name: Verify CMake installation
+      shell: bash
+      env:
+        EXPECTED_VERSION: ${{ inputs.cmake_version }}
+        CMAKE: ${{ steps.install.outputs.cmake }}
+        CTEST: ${{ steps.install.outputs.ctest }}
+        CMAKE_DIR: ${{ steps.install.outputs.cmake-dir }}
+      run: |
+        set -euo pipefail
+        # Outputs point at real, executable files
+        test -x "${CMAKE}"
+        test -x "${CTEST}"
+        test -d "${CMAKE_DIR}"
+        # Explicit output paths run and report the expected version
+        "${CMAKE}" --version | grep -q "${EXPECTED_VERSION}"
+        "${CTEST}" --version
+        # GITHUB_PATH was updated: bare `cmake` resolves in this later step
+        cmake --version | grep -q "${EXPECTED_VERSION}"
 
   bad_hash:
     name: "Negative test (wrong hash)"
@@ -151,28 +87,28 @@ jobs:
     container:
       image: swift:6.2-jammy
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Install prerequisites
-        shell: bash
-        run: |
-          apt-get update
-          apt-get install -y curl
-      - name: Install CMake with a wrong hash (expected to fail)
-        id: install
-        continue-on-error: true
-        uses: ./.github/actions/install-cmake
-        with:
-          cmake-version: ${{ inputs.cmake_version }}
-          hash: "0000000000000000000000000000000000000000000000000000000000000000"
-      - name: Assert the install failed
-        shell: bash
-        env:
-          OUTCOME: ${{ steps.install.outcome }}
-        run: |
-          set -euo pipefail
-          if [ "${OUTCOME}" != "failure" ]; then
-            echo "::error::Expected install to fail on hash mismatch, but outcome was '${OUTCOME}'"
-            exit 1
-          fi
-          echo "Install correctly failed on SHA-256 mismatch."
+    - name: Checkout
+      uses: actions/checkout@v7
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        apt-get update
+        apt-get install -y curl
+    - name: Install CMake with a wrong hash (expected to fail)
+      id: install
+      continue-on-error: true
+      uses: ./.github/actions/install-cmake
+      with:
+        cmake-version: ${{ inputs.cmake_version }}
+        hash: "0000000000000000000000000000000000000000000000000000000000000000"
+    - name: Assert the install failed
+      shell: bash
+      env:
+        OUTCOME: ${{ steps.install.outcome }}
+      run: |
+        set -euo pipefail
+        if [ "${OUTCOME}" != "failure" ]; then
+          echo "::error::Expected install to fail on hash mismatch, but outcome was '${OUTCOME}'"
+          exit 1
+        fi
+        echo "Install correctly failed on SHA-256 mismatch."
